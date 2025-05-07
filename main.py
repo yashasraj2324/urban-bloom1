@@ -33,14 +33,19 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Get API keys from environment variables safely
-GOOGLE_API_KEY = "AIzaSyCUnt3ZLimDiToSqlfJBCTepPrqpZBCKgY"
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 if not GOOGLE_API_KEY:
     logger.error("GOOGLE_API_KEY not set in environment variables")
     raise RuntimeError("GOOGLE_API_KEY not set in environment variables")
 
-WEATHER_API_KEY = "71205c205335df85df7b13f3519e8bf4"
-SERPAPI_KEY = "10fc45f90a84480a587a8328286f2bb06e70b75b3e9435cab52918bbd0248653"
-UNSPLASH_KEY="mOSycI-GrOppoTI_6Oqv3ahKwxDFTVKcE3amppU-vCg"
+WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
+SERPAPI_KEY = os.getenv("SERP_API_KEY")
+UNSPLASH_KEY=os.getenv("UNSPLASH_API_KEY")
+
+# Validate that required keys are present
+for key_name, key_value in [
+    ("WEATHER_API_KEY", WEATHER_API_KEY),
+    ("SERPAPI_KEY", SERPAPI_KEY)
 
 # Validate that required keys are present
 for key_name, key_value in [
