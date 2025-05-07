@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IoT Gardening Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f4f7;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    .status-box {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+    .status-box div {
+      padding: 10px;
+      background-color: #f4f4f4;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    button {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>IoT Gardening Dashboard</h1>
+
+    <div class="status-box">
+      <div>
+        <h3>Soil Moisture</h3>
+        <p id="moistureLevel">Loading...</p>
+      </div>
+      <div>
+        <h3>Battery Level</h3>
+        <p id="batteryLevel">Loading...</p>
+      </div>
+    </div>
+
+    <button id="waterButton">Water Plants</button>
+
+    <script>
+      let bluetoothDevice;
+      let bluetoothServer;
+
+      // Function to connect to Bluetooth device
+      async function connectToBluetooth() {
+        try {
+          bluetoothDevice = await navigator.bluetooth.requestDevice({
+            filters: [{ name: 'HC-05' }] // Searching for the HC-05 Bluetooth device
+          });
+          bluetoothServer = await bluetoothDevice.gatt.connect();
+          console.log('Connected to Bluetooth device');
+        } catch (error) {
+          console.error('Error connecting to Bluetooth device:', error);
+        }
+      }
+
+      // Function to read data from the sensor
+      async function readSensorData() {
+        if (bluetoothServer) {
+          try {
+            const service = await bluetoothServer.getPrimaryService('soil-moisture-service');
+            const moistureCharacteristic = await service.getCharacteristic('soil-moisture-characteristic');
+
+            const moistureData = await moistureCharacteristic.readValue();
+            const moisture = moistureData.getUint8(0); // Assuming 1 byte value for moisture
+
+            document.getElementById('moistureLevel').textContent = `${moisture}%`;
+
+            // If moisture is low, enable watering button
+            if (moisture < 30) {
+              document.getElementById('waterButton').disabled = false;
+            } else {
+              document.getElementById('waterButton').disabled = true;
+            }
+          } catch (error) {
+            console.error('Error reading sensor data:', error);
+          }
+        }
+      }
+
+      // Function to trigger water pump
+      async function waterPlants() {
+        try {
+          if (bluetoothServer) {
+            const service = await bluetoothServer.getPrimaryService('soil-moisture-service');
+            const relayCharacteristic = await service.getCharacteristic('relay-characteristic');
+
+            await relayCharacteristic.writeValue(new Uint8Array([1])); // Command to turn on the water pump
+            console.log('Water pump activated');
+          }
+        } catch (error) {
+          console.error('Error activating water pump:', error);
+        }
+      }
+
+      // Event listeners
+      document.getElementById('waterButton').addEventListener('click', waterPlants);
+
+      // Connect to Bluetooth and start reading sensor data
+      connectToBluetooth();
+      setInterval(readSensorData, 5000); // Read data every 5 seconds
+    </script>
+  </div>
+</body>
+</html>

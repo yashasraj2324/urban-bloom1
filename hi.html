@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Garden - Plant Recommendation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 700px;
+      margin: auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 10px;
+      margin-top: 40px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #2d7f5e;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+    }
+    input[type="file"], select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+    }
+    button {
+      background-color: #2d7f5e;
+      color: white;
+      border: none;
+      padding: 12px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 20px;
+      border-radius: 5px;
+    }
+    button:hover {
+      background-color: #256b4d;
+    }
+    .results {
+      margin-top: 30px;
+    }
+    .plant {
+      margin: 15px 0;
+      border: 1px solid #ccc;
+      padding: 10px;
+      border-radius: 8px;
+    }
+    .plant img {
+      max-width: 100%;
+      border-radius: 5px;
+    }
+   
+        .gradient-bg {
+            background: linear-gradient(120deg, #d4fc79 0%, #96e6a1 100%);
+        }
+        .loading-spinner {
+            display: none;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .plant-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .plant-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+        .custom-file-input::-webkit-file-upload-button {
+            visibility: hidden;
+        }
+        .custom-file-input::before {
+            content: 'Select Image';
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 4px;
+            outline: none;
+            white-space: nowrap;
+            cursor: pointer;
+            font-weight: 600;
+            background-color: #4CAF50;
+            color: white;
+        }
+        .custom-file-input:hover::before {
+            background-color: #45a049;
+        }
+        .image-preview {
+            max-height: 300px;
+            object-fit: contain;
+        }
+        .flex {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0px 20;
+        }
+        .options {
+            display: flex;
+            list-style-type: none;
+            margin-left: 20px;
+        }
+        .options li {
+            margin-right: 20px;
+        }
+  </style>
+</head>
+<body>
+    <header class="gradient-bg shadow-md">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex flex-col md:flex-row items-center justify-between">
+                <div class="flex items-center mb-4 md:mb-0">
+                    <i class="fas fa-leaf text-green-800 text-3xl mr-3"></i>
+                    <h1 class="text-2xl md:text-3xl font-bold text-green-900">Urban bloom </h1>
+                   <div class="options">
+                    <li class="flex"><a href="reminders.html">reminders</a></li>
+                    <li class="flex"><a href="https://huggingface.co/spaces/Prasannaraj12/urbanbloom" target="_blank"> Chatbot</a>
+                    </li>
+                    
+                    <li class="flex"><a href="dashboard.html">dashboard</a></li>
+                   </div>
+                </div>
+                <p class="text-sm md:text-base text-green-800">Find the perfect plants for your space</p>
+            </div>
+        </div>
+    </header>
+
+  <div class="container">
+    
+    <h1>Smart Gardening Assistant</h1>
+    <form id="plantForm">
+      <label for="image">Upload Balcony Image:</label>
+      <input type="file" id="image" name="image" accept="image/*" required>
+
+      <label for="sunlight">Sunlight Level:</label>
+      <select id="sunlight" name="sunlight">
+        <option value="low">Low</option>
+        <option value="moderate" selected>Moderate</option>
+        <option value="high">High</option>
+      </select>
+
+      <label for="pot">Pot Preference:</label>
+      <select id="pot" name="pot">
+        <option value="any" selected>Any</option>
+        <option value="small">Small</option>
+        <option value="medium">Medium</option>
+        <option value="large">Large</option>
+      </select>
+
+      <button type="submit">Get Recommendations</button>
+    </form>
+
+    <div class="results" id="results"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById('plantForm');
+    const resultsDiv = document.getElementById('results');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const imageFile = document.getElementById('image').files[0];
+      const sunlight = document.getElementById('sunlight').value;
+      const pot = document.getElementById('pot').value;
+
+      if (!imageFile) return alert("Please upload an image.");
+
+      const formData = new FormData();
+      formData.append("file", imageFile);
+      formData.append("sunlight_level", sunlight);
+      formData.append("pot_preference", pot);
+
+      resultsDiv.innerHTML = "<p>Loading recommendations...</p>";
+
+      try {
+        const response = await fetch("http://localhost:8000/suggest", {
+          method: "POST",
+          body: formData
+        });
+
+        if (!response.ok) throw new Error("Failed to fetch recommendations");
+        const data = await response.json();
+
+        resultsDiv.innerHTML = `<h2>Recommendations:</h2>`;
+        data.suggested_plants.forEach(plant => {
+          const plantHTML = `
+            <div class="plant">
+              <h3>${plant.name}</h3>
+              <p>Pot Size: ${plant.pot_size}</p>
+              <p><a href="${plant.info_url}" target="_blank">More Info</a></p>
+              ${plant.image_url ? `<img src="${plant.image_url}" alt="${plant.name}">` : ""}
+            </div>
+          `;
+          resultsDiv.innerHTML += plantHTML;
+        });
+
+        if (data.ar_image_base64) {
+          resultsDiv.innerHTML += `<h3>AR View:</h3><img src="data:image/png;base64,${data.ar_image_base64}" alt="AR View" style="width:100%;border-radius:10px;">`;
+        }
+      } catch (error) {
+        console.error(error);
+        resultsDiv.innerHTML = `<p style="color:red">Error fetching recommendations. Try again.</p>`;
+      }
+    });
+  </script>
+</body>
+</html>
